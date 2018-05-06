@@ -56,7 +56,7 @@ int main( int argc, char *argv[] )
         srand(time(NULL));
 		for(index=0; index<myDataSize; index++)
 		{
-			myData[index] = rand()%500;
+			myData[index] = rand()%MAX_RANDOM;
 		}
     }
 	
