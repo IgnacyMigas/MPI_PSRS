@@ -17,11 +17,16 @@
 #define START_SCAT 8
 #define END_SCAT 9
 
-int MPI_Init( int *argc, char ***argv );
-int MPI_Finalize( void );
-int MPI_Bcast( void *buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) ;
+int MPI_Init(int *argc, char ***argv);
+
+int MPI_Finalize(void);
+
+int MPI_Bcast(void *buf, int count, MPI_Datatype datatype, int root, MPI_Comm comm);
+
 int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
+
 int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status);
+
 int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 
 /*
