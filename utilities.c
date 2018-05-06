@@ -1,8 +1,29 @@
 #include "utilities.h"
 
-int multimerge(int * start[], const int lengths[], const int Number, int newArray[], const int newArrayLength){
-
-}
+int multimerge(int *start[], const int lengths[], const int Number, int newArray[], const int newArrayLength){
+    int index, i, j, min;
+    int pivots[Number];
+    for(i=0; i<Number; i++){
+        pivots[i] = 0;
+    }
+    for(i=0; i<newArrayLength; ++i){
+        min = MAX_RANDOM;
+        index = -1;
+        for(j=0; j<Number; ++j){
+            if(pivots[j]<lengths[j] && min>start[j][pivots[j]]){
+                min = start[j][pivots[j]];
+                index = j;
+            }
+        }
+        if(index != -1){
+            newArray[i] = min;
+            ++pivots[index];
+        }
+        else{
+            printf("ERROR: cannot find right element!");
+        }
+    }
+}}
 
 int compare_ints(const void *a, const void *b)
 {
@@ -21,5 +42,4 @@ void printArray(int myid, char *arrayName, int array[], int length)
 	{
 		printf("%d: %s[%d] = %d\n", myid, arrayName, i, array[i]);
 	}
-	return;
 }
