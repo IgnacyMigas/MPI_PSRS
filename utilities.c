@@ -1,6 +1,7 @@
 #include "utilities.h"
 
-int multimerge(int *start[], const int lengths[], const int Number, int newArray[], const int newArrayLength){
+int multimerge(int *start[], const int lengths[], const int Number, int newArray[], const int newArrayLength)
+{
     int index, i, j, min;
     int pivots[Number];
     for(i=0; i<Number; i++){
@@ -23,7 +24,7 @@ int multimerge(int *start[], const int lengths[], const int Number, int newArray
             printf("ERROR: cannot find right element!");
         }
     }
-}}
+}
 
 int compare_ints(const void *a, const void *b)
 {
