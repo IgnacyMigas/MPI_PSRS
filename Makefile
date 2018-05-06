@@ -4,6 +4,7 @@ EXEC = PSRS
 SRC = utilities.c profiles.c
 OBJ = $(SRC:.c=.o)
 LIB = -I/opt/nfs/mpe2-2.4.9b/include -L/opt/nfs/mpe2-2.4.9b/lib
+N = 10
 
 all: $(EXEC)
 
@@ -25,5 +26,4 @@ val:
 .PHONY: clean rebuild
 
 run: $(EXEC)
-	./$(EXEC).out
-
+	/opt/nfs/mpich-3.2/bin/mpiexec -n ${N} ./$(EXEC).out ${FILE}
