@@ -9,7 +9,7 @@ N = 10
 all: $(EXEC)
 
 $(EXEC): $(EXEC).o $(OBJ)
-	$(CXX) $(LIB) $(CXXFLAGS) $(EXEC).o $(OBJ) -o $(EXEC).out   
+	$(CXX) $(EXEC).o $(OBJ) -o $(EXEC).out $(LIB) $(CXXFLAGS)
 
 .c.o:
 	$(CXX) $(LIB) $(CXXFLAGS) -c $< -o $@
@@ -26,4 +26,4 @@ val:
 .PHONY: clean rebuild
 
 run: $(EXEC)
-	/opt/nfs/mpich-3.2/bin/mpiexec -n ${N} ./$(EXEC).out ${FILE}
+	/opt/nfs/mpich-3.2/bin/mpiexec -n ${N} ./$(EXEC).out ${ARGS}
