@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "mpi.h"
-//#include "profiles.h"
+#include "profiles.h"
 #include "utilities.h"
 
 
@@ -11,6 +10,7 @@ int main(int argc, char *argv[]) {
 
     int numprocs, myid, server, ret;
     int i, index, classindex, iprocessor;
+    double startwtime = 0.0, endwtime;
     MPI_Comm world, workers;
     MPI_Group world_group, worker_group;
     MPI_Status status;
@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
             }
         }
         printf("\nThe end\n");
+        startwtime = MPI_Wtime();
     }
 
     // send data size of whole data to all processes
@@ -254,6 +255,8 @@ int main(int argc, char *argv[]) {
     // phase V
 
     if (myid == 0) {
+        endwtime = MPI_Wtime();
+        printf("\nClock time (seconds) = %f\n\n", endwtime-startwtime);
         printf("Sorted data:\n");
         for (index = 0; index < myDataSize; index++) {
             printf("%d ", sortedData[index]);

@@ -7,7 +7,7 @@ int multimerge(int *start[], const int lengths[], const int Number, int newArray
         pivots[i] = 0;
     }
     for (i = 0; i < newArrayLength; ++i) {
-        min = MAX_RANDOM;
+        min = RAND_MAX;
         index = -1;
         for (j = 0; j < Number; ++j) {
             if (pivots[j] < lengths[j] && min > start[j][pivots[j]]) {
