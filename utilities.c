@@ -22,6 +22,7 @@ int multimerge(int *start[], const int lengths[], const int Number, int newArray
             return -1;
         }
     }
+    return 0;
 }
 
 int compare_ints(const void *a, const void *b) {
@@ -31,17 +32,6 @@ int compare_ints(const void *a, const void *b) {
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
-}
-
-void printArray(int myid, char *arrayName, int array[], int start, int length) {
-    int i;
-    for (i = start; i < start + length; i++) {
-        printf("%d: %s[%d] = %d\n", myid, arrayName, i, array[i]);
-    }
-}
-
-void printArray1(int myid, char *arrayName, int array[], int length) {
-    printArray(myid, arrayName, array, 0, length);
 }
 
 void printArrayAtOnce(int myid, char *msg, int array[], int length) {

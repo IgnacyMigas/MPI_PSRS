@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "profiles.h"
+#include "mpi.h"
+//#include "profiles.h"
 #include "utilities.h"
 
 
@@ -54,6 +55,9 @@ int main(int argc, char *argv[]) {
         printf("Size of whole data to process: %d\n", myDataSize);
     }
 
+    // send data size of whole data to all processes
+    MPI_Bcast(&myDataSize, 1, MPI_INT, server, world);
+
     int myData[myDataSize];
 
     if (myid == server) {
@@ -80,9 +84,6 @@ int main(int argc, char *argv[]) {
         startwtime = MPI_Wtime();
     }
 
-    // send data size of whole data to all processes
-    MPI_Bcast(&myDataSize, 1, MPI_INT, server, world);
-
     int myDataLengths[numprocs];
     int myDataStarts[numprocs];
 
@@ -101,7 +102,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
     /**
      * PHASE II
      * Data gathering, pivot choosing
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         MPI_Scatterv(myData, myDataLengths, myDataStarts, MPI_INT, MPI_IN_PLACE, myDataLengths[myid], MPI_INT, server,
                      world);
     } else {
-        MPI_Scatterv(myData, myDataLengths, myDataStarts, MPI_INT, &myData, myDataLengths[myid], MPI_INT, server,
+        MPI_Scatterv(myData, myDataLengths, myDataStarts, MPI_INT, myData, myDataLengths[myid], MPI_INT, server,
                      world);
     }
 
@@ -189,18 +189,23 @@ int main(int argc, char *argv[]) {
             ++classLength[classindex];
             ++dataindex;
         }
+        printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, classindex, classStart[classindex],
+               classLength[classindex]);
     }
     // set Start and Length for last class
     classStart[numprocs - 1] = dataindex;
     classLength[numprocs - 1] = myDataLengths[myid] - dataindex;
 
+    printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, classindex, classStart[numprocs - 1],
+           classLength[numprocs - 1]);
 
-    // *******************************************
-    //
-    // PHASE V:  All ith classes are gathered by processor i
-    int recvbuffer[myDataSize];    // buffer to hold all members of class i
-    int recvLengths[numprocs];     // on myid, lengths of each myid^th class
-    int recvStarts[numprocs];      // indices of where to start the store from 0, 1, ...
+    /**
+     * PHASE V
+     * Partitioned data gatther, multimerge
+     */
+    int recvbuffer[myDataSize];
+    int recvLengths[numprocs];
+    int recvStarts[numprocs];
 
     // processor iprocessor functions as the root and gathers from the
     // other processors all of its sorted values in the iprocessor^th class.
@@ -223,21 +228,28 @@ int main(int argc, char *argv[]) {
         // classes from the other nodes
         MPI_Gatherv(&myData[classStart[iprocessor]], classLength[iprocessor], MPI_INT, recvbuffer, recvLengths,
                     recvStarts, MPI_INT, iprocessor, world);
-    }
 
+    }
 
     // multimerge these numproc lists on each processor
     int *mmStarts[numprocs]; // array of list starts
     for (i = 0; i < numprocs; i++) {
         mmStarts[i] = recvbuffer + recvStarts[i];
     }
-    multimerge(mmStarts, recvLengths, numprocs, myData, myDataSize);
 
+    multimerge(mmStarts, recvLengths, numprocs, myData, myDataSize);
     int mysendLength = recvStarts[numprocs - 1] + recvLengths[numprocs - 1];
 
+    printArrayAtOnce(myid, "Data for myid class", myData, mysendLength);
+
+    /**
+     * PHASE VI
+     * Server sorted data from all processes merge
+     */
     // Root collects data
-    int sendLengths[numprocs]; // lengths of consolidated classes
-    int sendStarts[numprocs];  // starting points of classes
+    int sendLengths[numprocs];
+    int sendStarts[numprocs];
+
     // Root processor gathers up the lengths of all the data to be gathered
     MPI_Gather(&mysendLength, 1, MPI_INT, sendLengths, 1, MPI_INT, server, world);
 
@@ -249,20 +261,20 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // gather sorted data to root
     int sortedData[myDataSize];
+
+    // gather sorted data to root
     MPI_Gatherv(myData, mysendLength, MPI_INT, sortedData, sendLengths, sendStarts, MPI_INT, server, world);
-    // phase V
 
     if (myid == 0) {
         endwtime = MPI_Wtime();
-        printf("\nClock time (seconds) = %f\n\n", endwtime-startwtime);
+        printf("\nClock time (seconds) = %f\n\n", endwtime - startwtime);
         printf("Sorted data:\n");
         for (index = 0; index < myDataSize; index++) {
             printf("%d ", sortedData[index]);
             fprintf(ofp, "%d ", sortedData[index]);
         }
-        printf("\nKoniec\n");
+        printf("\nThe end\n");
         fclose(ofp);
     }
 
