@@ -1,5 +1,5 @@
 CXX = mpicc
-CXXFLAGS = -lmpe -lm -lpthread
+CXXFLAGS = -std=c11 -lmpe -lm -lpthread
 EXEC = PSRS
 SRC = utilities.c profiles.c
 OBJ = $(SRC:.c=.o)
