@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-                printf("%d ", myData[i]);
+             //   printf("%d ", myData[i]);
             }
             fclose(ifp);
         } else {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     // processes quick sort each process own data
     qsort(myData, myDataLengths[myid], sizeof(int), compare_ints);
 
-    printArrayAtOnce(myid, "Sorted data", myData, myDataLengths[myid]);
+ //   printArrayAtOnce(myid, "Sorted data", myData, myDataLengths[myid]);
 
     int pivotbuffer[numprocs * numprocs];
 
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
         pivotbuffer[i] = myData[i * myDataLengths[myid] / numprocs];
     }
 
-    printArrayAtOnce(myid, "Pivot values", pivotbuffer, numprocs);
+   // printArrayAtOnce(myid, "Pivot values", pivotbuffer, numprocs);
 
     // server gather all pivots
     if (myid == server) {
@@ -143,14 +143,14 @@ int main(int argc, char *argv[]) {
      */
     // server merge pivots
     if (myid == server) {
-        // multimerge the numproc sorted lists into one
         int *starts[numprocs];
         int lengths[numprocs];
+
         for (i = 0; i < numprocs; i++) {
             starts[i] = &pivotbuffer[i * numprocs];
             lengths[i] = numprocs;
         }
-        int tempBuffer[numprocs * numprocs];  // merged list
+        int tempBuffer[numprocs * numprocs];
 
         multimerge(starts, lengths, numprocs, tempBuffer, numprocs * numprocs); // sorted list of pivots
 
@@ -160,8 +160,8 @@ int main(int argc, char *argv[]) {
             pivotbuffer[i] = tempBuffer[(i + 1) * numprocs];
         }
 
-        printArrayAtOnce(myid, "Merged pivots", tempBuffer, numprocs * numprocs);
-        printArrayAtOnce(myid, "Chosen pivots", pivotbuffer, numprocs - 1);
+     //   printArrayAtOnce(myid, "Merged pivots", tempBuffer, numprocs * numprocs);
+     //   printArrayAtOnce(myid, "Chosen pivots", pivotbuffer, numprocs - 1);
 
     }
 
@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
     multimerge(mmStarts, recvLengths, numprocs, myData, myDataSize);
     int mysendLength = recvStarts[numprocs - 1] + recvLengths[numprocs - 1];
 
-    printArrayAtOnce(myid, "Data for myid class", myData, mysendLength);
+  //  printArrayAtOnce(myid, "Data for myid class", myData, mysendLength);
 
     /**
      * PHASE VI
@@ -268,12 +268,12 @@ int main(int argc, char *argv[]) {
 
     if (myid == 0) {
         endwtime = MPI_Wtime();
-        printf("\nClock time (seconds) = %f\n\n", endwtime - startwtime);
         printf("Sorted data:\n");
         for (index = 0; index < myDataSize; index++) {
-            printf("%d ", sortedData[index]);
+        //    printf("%d ", sortedData[index]);
             fprintf(ofp, "%d ", sortedData[index]);
         }
+        printf("\nClock time (seconds) = %f\n\n", endwtime - startwtime);
         printf("\nThe end\n");
         fclose(ofp);
     }
