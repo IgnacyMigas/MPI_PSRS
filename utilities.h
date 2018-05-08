@@ -14,4 +14,6 @@ void printArray(int myid, char *arrayName, int array[], int start, int length);
 
 void printArray1(int myid, char *arrayName, int array[], int length);
 
+void printArrayAtOnce(int myid, char *msg, int array[], int length);
+
 #endif

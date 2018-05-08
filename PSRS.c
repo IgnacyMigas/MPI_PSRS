@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "profiles.h"
+#include "mpi.h"
+//#include "profiles.h"
 #include "utilities.h"
 
-/************************************************************/
 
 int main(int argc, char *argv[]) {
+
     int numprocs, myid, server, ret;
     int i, index, classindex, iprocessor;
     MPI_Comm world, workers;
@@ -21,7 +22,17 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(world, &myid);
     server = 0;
 
-    // prepare data
+    if (myid == server) {
+        printf("Starting\n");
+        printf("Number of processes %d\n", numprocs);
+    }
+
+
+    /**
+     * PHASE I
+     * Data preparation
+     */
+
     int myDataSize = 60;
 
     FILE *ifp, *ofp;
@@ -29,9 +40,10 @@ int main(int argc, char *argv[]) {
     ifp = NULL;
     ofp = NULL;
 
-    if (myid == 0) {
+    if (myid == server) {
         ofp = fopen("out.data", "w");
 
+        // set data length
         for (i = 0; i < argc; i++) {
             if (strcmp(argv[i], "-f") == 0) {
                 inFile = argv[i + 1];
@@ -39,25 +51,14 @@ int main(int argc, char *argv[]) {
                 ret = fscanf(ifp, "%d", &myDataSize);
             }
         }
+        printf("Size of whole data to process: %d\n", myDataSize);
     }
-    MPI_Bcast(&myDataSize, 1, MPI_INT, 0, world);
 
     int myData[myDataSize];
-    int myDataLengths[numprocs];
-    int myDataStarts[numprocs];
 
-    int pivotbuffer[numprocs * numprocs];
-    int pivotbufferSize;
-
-    for (i = 0; i < numprocs; i++) {
-        myDataLengths[i] = myDataSize / numprocs;
-        myDataStarts[i] = i * myDataSize / numprocs;
-    }
-    myDataLengths[numprocs - 1] += (myDataSize % numprocs);
-
-    // set values to sort
-    if (myid == 0) {
-        printf("Tablica:\n");
+    if (myid == server) {
+        // set values to sort
+        printf("Table values to sort:\n");
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
                 ret = fscanf(ifp, "%d", &myData[i]);
@@ -75,10 +76,36 @@ int main(int argc, char *argv[]) {
                 printf("%d ", myData[index]);
             }
         }
-        printf("\nKoniec\n");
+        printf("\nThe end\n");
     }
 
-    // scatter data to all process
+    // send data size of whole data to all processes
+    MPI_Bcast(&myDataSize, 1, MPI_INT, server, world);
+
+    int myDataLengths[numprocs];
+    int myDataStarts[numprocs];
+
+    // set data lengths and data start values of each process
+    for (i = 0; i < numprocs; i++) {
+        myDataLengths[i] = myDataSize / numprocs;
+        myDataStarts[i] = i * (myDataSize / numprocs);
+    }
+    myDataLengths[numprocs - 1] += (myDataSize % numprocs);
+
+    if (myid == server) {
+        printf("Lengths of data to be send to processes...\n");
+
+        for (i = 0; i < numprocs; i++) {
+            printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths[i], myDataStarts[i]);
+        }
+    }
+
+
+    /**
+     * PHASE II
+     * Data gathering, pivot choosing
+     */
+    // scatter data to all processes
     if (myid == server) {
         MPI_Scatterv(myData, myDataLengths, myDataStarts, MPI_INT, MPI_IN_PLACE, myDataLengths[myid], MPI_INT, server,
                      world);
@@ -87,13 +114,19 @@ int main(int argc, char *argv[]) {
                      world);
     }
 
-    // processes sort their own data
+    // processes quick sort each process own data
     qsort(myData, myDataLengths[myid], sizeof(int), compare_ints);
 
-    // processes get pivots from data
-    for (index = 0; index < numprocs; index++) {
-        pivotbuffer[index] = myData[index * myDataLengths[myid] / numprocs];
+    printArrayAtOnce(myid, "Sorted data", myData, myDataLengths[myid]);
+
+    int pivotbuffer[numprocs * numprocs];
+
+    // process get pivots from data
+    for (i = 0; i < numprocs; i++) {
+        pivotbuffer[i] = myData[i * myDataLengths[myid] / numprocs];
     }
+
+    printArrayAtOnce(myid, "Pivot values", pivotbuffer, numprocs);
 
     // server gather all pivots
     if (myid == server) {
@@ -102,29 +135,44 @@ int main(int argc, char *argv[]) {
         MPI_Gather(pivotbuffer, numprocs, MPI_INT, pivotbuffer, numprocs, MPI_INT, server, world);
     }
 
-    // server merge
+
+    /**
+     * PHASE III
+     * Server pivot merge, choose,
+     */
+    // server merge pivots
     if (myid == server) {
         // multimerge the numproc sorted lists into one
-        int *starts[numprocs];  // array of lists
-        int lengths[numprocs];  // array of lengths of lists
+        int *starts[numprocs];
+        int lengths[numprocs];
         for (i = 0; i < numprocs; i++) {
             starts[i] = &pivotbuffer[i * numprocs];
             lengths[i] = numprocs;
         }
-        int tempbuffer[numprocs * numprocs];  // merged list
-        multimerge(starts, lengths, numprocs, tempbuffer, numprocs * numprocs);
+        int tempBuffer[numprocs * numprocs];  // merged list
 
-        // regularly select numprocs-1 of pivot candidates to broadcast
+        multimerge(starts, lengths, numprocs, tempBuffer, numprocs * numprocs); // sorted list of pivots
+
+        // regularly select numprocs - 1 of pivot candidates to broadcast
         // as partition pivot values for myData
         for (i = 0; i < numprocs - 1; i++) {
-            pivotbuffer[i] = tempbuffer[(i + 1) * numprocs];
+            pivotbuffer[i] = tempBuffer[(i + 1) * numprocs];
         }
+
+        printArrayAtOnce(myid, "Merged pivots", tempBuffer, numprocs * numprocs);
+        printArrayAtOnce(myid, "Chosen pivots", pivotbuffer, numprocs - 1);
+
     }
 
     // server broadcasts the partition values
     MPI_Bcast(pivotbuffer, numprocs - 1, MPI_INT, server, world);
 
-    // phase IV
+
+    /**
+     * PHASE IV
+     * Data partitioning
+     */
+
     int classStart[numprocs];
     int classLength[numprocs];
 
