@@ -4,7 +4,7 @@ EXEC = PSRS
 SRC = utilities.c profiles.c
 OBJ = $(SRC:.c=.o)
 LIB = -I/opt/nfs/mpe2-2.4.9b/include -L/opt/nfs/mpe2-2.4.9b/lib
-N = 10
+N = 4
 
 all: $(EXEC)
 
