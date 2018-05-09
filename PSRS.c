@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "mpi.h"
-//#include "profiles.h"
+//#include "mpi.h"
+#include "profiles.h"
 #include "utilities.h"
 
 
