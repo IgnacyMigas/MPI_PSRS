@@ -10,10 +10,10 @@ int MPI_Init(int *argc, char ***argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     if (myid == 0) {
         MPE_Describe_state(START_BCAST, END_BCAST, "Brodcast", "blue");
-        MPE_Describe_state(START_SCAT, END_SCAT, "Scatter", "red");
-        MPE_Describe_state(START_SCATV, END_SCATV, "Scatterv", "cyan");
-        MPE_Describe_state(START_GATH, END_GATH, "Gather", "black");
-        MPE_Describe_state(START_GATHV, END_GATHV, "Gatherv", "grey");
+        MPE_Describe_state(START_SCAT, END_SCAT, "Scatter", "cyan");
+        MPE_Describe_state(START_SCATV, END_SCATV, "Scatterv", "red");
+        MPE_Describe_state(START_GATH, END_GATH, "Gather", "yellow");
+        MPE_Describe_state(START_GATHV, END_GATHV, "Gatherv", "green");
         MPE_Describe_state(START_ALLRED, END_ALLRED, "All Reduce", "white");
         MPE_Describe_state(START_RECV, END_RECV, "Recive", "white");
         MPE_Describe_state(START_SEND, END_SEND, "Send", "white");
