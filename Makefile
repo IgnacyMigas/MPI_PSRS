@@ -1,4 +1,4 @@
-CXX = mpicc
+CXX = /opt/nfs/mpich-3.2/bin/mpicc
 CXXFLAGS = -std=c11 -lmpe -lm -lpthread
 EXEC = PSRS
 SRC = utilities.c profiles.c
@@ -25,5 +25,12 @@ val:
 
 .PHONY: clean rebuild
 
-run: $(EXEC)
-	/opt/nfs/mpich-3.2/bin/mpiexec -n ${N} ./$(EXEC).out ${ARGS}
+run:
+ifdef NODES
+	$(eval ARGS1=-f $(NODES))
+endif
+ifdef FILE
+	$(eval ARGS2=-f $(FILE))
+endif
+	/opt/nfs/mpich-3.2/bin/mpiexec -n ${N} ${ARGS1} ./$(EXEC).out $(ARGS2)
+
