@@ -9,9 +9,10 @@
 
 int main(int argc, char *argv[]) {
 
-    int numprocs, myid, server, ret;
-    int i, index, classindex, iprocessor;
+    int numprocs, myid, server;
+    int i, j, ret;
     double startwtime = 0.0, endwtime;
+
     MPI_Comm world, workers;
     MPI_Group world_group, worker_group;
     MPI_Status status;
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]) {
     server = 0;
 
     if (myid == server) {
-        printf("Starting\n");
+        printf("\nStarting\n");
         printf("Number of processes %d\n", numprocs);
     }
 
@@ -33,7 +34,6 @@ int main(int argc, char *argv[]) {
      * PHASE I
      * Data preparation
      */
-
     int myDataSize = 60;
 
     FILE *ifp, *ofp;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
     if (myid == server) {
         // set values to sort
-        printf("Table values to sort:\n");
+        // printf("Table values to sort:\n");
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
                 ret = fscanf(ifp, "%d", &myData[i]);
@@ -70,14 +70,14 @@ int main(int argc, char *argv[]) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-             //   printf("%d ", myData[i]);
+                //   printf("%d ", myData[i]);
             }
             fclose(ifp);
         } else {
             srand(time(NULL));
-            for (index = 0; index < myDataSize; index++) {
-                myData[index] = rand() % MAX_RANDOM;
-                printf("%d ", myData[index]);
+            for (i = 0; i < myDataSize; i++) {
+                myData[i] = rand() % MAX_RANDOM;
+                printf("%d ", myData[i]);
             }
         }
         printf("\nThe end\n");
@@ -118,28 +118,28 @@ int main(int argc, char *argv[]) {
     // processes quick sort each process own data
     qsort(myData, myDataLengths[myid], sizeof(int), compare_ints);
 
- //   printArrayAtOnce(myid, "Sorted data", myData, myDataLengths[myid]);
+    //   printArrayAtOnce(myid, "Sorted data", myData, myDataLengths[myid]);
 
-    int pivotbuffer[numprocs * numprocs];
+    int pivots[numprocs * numprocs];
 
     // process get pivots from data
     for (i = 0; i < numprocs; i++) {
-        pivotbuffer[i] = myData[i * myDataLengths[myid] / numprocs];
+        pivots[i] = myData[i * myDataLengths[myid] / numprocs];
     }
 
-   // printArrayAtOnce(myid, "Pivot values", pivotbuffer, numprocs);
+    // printArrayAtOnce(myid, "Pivot values", pivots, numprocs);
 
     // server gather all pivots
     if (myid == server) {
-        MPI_Gather(MPI_IN_PLACE, numprocs, MPI_INT, pivotbuffer, numprocs, MPI_INT, server, world);
+        MPI_Gather(MPI_IN_PLACE, numprocs, MPI_INT, pivots, numprocs, MPI_INT, server, world);
     } else {
-        MPI_Gather(pivotbuffer, numprocs, MPI_INT, pivotbuffer, numprocs, MPI_INT, server, world);
+        MPI_Gather(pivots, numprocs, MPI_INT, pivots, numprocs, MPI_INT, server, world);
     }
 
 
     /**
      * PHASE III
-     * Server pivot merge, choose,
+     * Server pivot merge, choose
      */
     // server merge pivots
     if (myid == server) {
@@ -147,113 +147,105 @@ int main(int argc, char *argv[]) {
         int lengths[numprocs];
 
         for (i = 0; i < numprocs; i++) {
-            starts[i] = &pivotbuffer[i * numprocs];
+            starts[i] = &pivots[i * numprocs];
             lengths[i] = numprocs;
         }
-        int tempBuffer[numprocs * numprocs];
+        int tmpBuffer[numprocs * numprocs];
 
-        multimerge(starts, lengths, numprocs, tempBuffer, numprocs * numprocs); // sorted list of pivots
+        multimerge(starts, lengths, numprocs, tmpBuffer, numprocs * numprocs); // sorted list of pivots
 
-        // regularly select numprocs - 1 of pivot candidates to broadcast
-        // as partition pivot values for myData
+        // regularly select numprocs - 1 of pivot candidates to broadcast as data partitions
         for (i = 0; i < numprocs - 1; i++) {
-            pivotbuffer[i] = tempBuffer[(i + 1) * numprocs];
+            pivots[i] = tmpBuffer[(i + 1) * numprocs];
         }
 
-     //   printArrayAtOnce(myid, "Merged pivots", tempBuffer, numprocs * numprocs);
-     //   printArrayAtOnce(myid, "Chosen pivots", pivotbuffer, numprocs - 1);
+        //   printArrayAtOnce(myid, "Merged pivots", tmpBuffer, numprocs * numprocs);
+        //   printArrayAtOnce(myid, "Chosen pivots", pivots, numprocs - 1);
 
     }
 
     // server broadcasts the partition values
-    MPI_Bcast(pivotbuffer, numprocs - 1, MPI_INT, server, world);
+    MPI_Bcast(pivots, numprocs - 1, MPI_INT, server, world);
 
 
     /**
      * PHASE IV
      * Data partitioning
      */
+    int partitionsStart[numprocs];
+    int partitionsLength[numprocs];
 
-    int classStart[numprocs];
-    int classLength[numprocs];
-
-    // need for each processor to partition its list using the values
-    // of pivotbuffer
+    // iterate over local data to partition data to classes
     int dataindex = 0;
-    for (classindex = 0; classindex < numprocs - 1; classindex++) {
-        classStart[classindex] = dataindex;
-        classLength[classindex] = 0;
+    for (i = 0; i < numprocs - 1; i++) {
+        partitionsStart[i] = dataindex;
+        partitionsLength[i] = 0;
 
-        // as long as dataindex refers to data in the current class
-        while ((dataindex < myDataLengths[myid]) && (myData[dataindex] <= pivotbuffer[classindex])) {
-            ++classLength[classindex];
+        // update data class index and length
+        while ((dataindex < myDataLengths[myid]) && (myData[dataindex] <= pivots[i])) {
+            ++partitionsLength[i];
             ++dataindex;
         }
-        printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, classindex, classStart[classindex],
-               classLength[classindex]);
+        printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, i, partitionsStart[i],
+               partitionsLength[i]);
     }
     // set Start and Length for last class
-    classStart[numprocs - 1] = dataindex;
-    classLength[numprocs - 1] = myDataLengths[myid] - dataindex;
+    partitionsStart[numprocs - 1] = dataindex;
+    partitionsLength[numprocs - 1] = myDataLengths[myid] - dataindex;
 
-    printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, classindex, classStart[numprocs - 1],
-           classLength[numprocs - 1]);
+    printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, numprocs - 1, partitionsStart[numprocs - 1],
+           partitionsLength[numprocs - 1]);
 
     /**
      * PHASE V
-     * Partitioned data gatther, multimerge
+     * Partitioned data gather, multi-merge
      */
-    int recvbuffer[myDataSize];
-    int recvLengths[numprocs];
-    int recvStarts[numprocs];
+    int newBuffer[myDataSize];
+    int newLengths[numprocs];
+    int newStarts[numprocs];
 
-    // processor iprocessor functions as the root and gathers from the
-    // other processors all of its sorted values in the iprocessor^th class.
-    for (iprocessor = 0; iprocessor < numprocs; iprocessor++) {
-        // Each processor, iprocessor gathers up the numproc lengths of the sorted
-        // values in the iprocessor class
-        MPI_Gather(&classLength[iprocessor], 1, MPI_INT, recvLengths, 1, MPI_INT, iprocessor, world);
+    // this process gets all sent partitioned data to corresponding process
+    for (i = 0; i < numprocs; i++) {
+        // each process gathers up data length of corresponding class from the other nodes
+        MPI_Gather(&partitionsLength[i], 1, MPI_INT, newLengths, 1, MPI_INT, i, world);
 
-
-        // From these lengths the myid^th class starts are computed on
-        // processor myid
-        if (myid == iprocessor) {
-            recvStarts[0] = 0;
-            for (i = 1; i < numprocs; i++) {
-                recvStarts[i] = recvStarts[i - 1] + recvLengths[i - 1];
+        // on local process, calculate start positions of received data
+        if (myid == i) {
+            newStarts[0] = 0;
+            for (j = 1; j < numprocs; j++) {
+                newStarts[j] = newStarts[j - 1] + newLengths[j - 1];
             }
         }
 
-        // each iprocessor gathers up all the members of the iprocessor^th
-        // classes from the other nodes
-        MPI_Gatherv(&myData[classStart[iprocessor]], classLength[iprocessor], MPI_INT, recvbuffer, recvLengths,
-                    recvStarts, MPI_INT, iprocessor, world);
+        // each process gathers up all the members of corresponding class from the other nodes
+        MPI_Gatherv(&myData[partitionsStart[i]], partitionsLength[i], MPI_INT, newBuffer, newLengths,
+                    newStarts, MPI_INT, i, world);
 
     }
 
-    // multimerge these numproc lists on each processor
-    int *mmStarts[numprocs]; // array of list starts
+    // multimerge this single partition data
+    int *newData[numprocs];
     for (i = 0; i < numprocs; i++) {
-        mmStarts[i] = recvbuffer + recvStarts[i];
+        newData[i] = newBuffer + newStarts[i];
     }
 
-    multimerge(mmStarts, recvLengths, numprocs, myData, myDataSize);
-    int mysendLength = recvStarts[numprocs - 1] + recvLengths[numprocs - 1];
+    multimerge(newData, newLengths, numprocs, myData, myDataSize);
+    int newDataLength = newStarts[numprocs - 1] + newLengths[numprocs - 1];
 
-  //  printArrayAtOnce(myid, "Data for myid class", myData, mysendLength);
+    //  printArrayAtOnce(myid, "Data for myid partition", myData, newDataLength);
 
     /**
      * PHASE VI
      * Server sorted data from all processes merge
      */
-    // Root collects data
+    // root collects data
     int sendLengths[numprocs];
     int sendStarts[numprocs];
 
-    // Root processor gathers up the lengths of all the data to be gathered
-    MPI_Gather(&mysendLength, 1, MPI_INT, sendLengths, 1, MPI_INT, server, world);
+    // root processor gathers up the lengths of all the data to be gathered
+    MPI_Gather(&newDataLength, 1, MPI_INT, sendLengths, 1, MPI_INT, server, world);
 
-    // The root processor compute starts from lengths of classes to gather
+    // the root processor compute starts from lengths of classes to gather
     if (myid == server) {
         sendStarts[0] = 0;
         for (i = 1; i < numprocs; i++) {
@@ -264,16 +256,16 @@ int main(int argc, char *argv[]) {
     int sortedData[myDataSize];
 
     // gather sorted data to root
-    MPI_Gatherv(myData, mysendLength, MPI_INT, sortedData, sendLengths, sendStarts, MPI_INT, server, world);
+    MPI_Gatherv(myData, newDataLength, MPI_INT, sortedData, sendLengths, sendStarts, MPI_INT, server, world);
 
     if (myid == 0) {
         endwtime = MPI_Wtime();
         printf("Sorted data:\n");
-        for (index = 0; index < myDataSize; index++) {
-        //    printf("%d ", sortedData[index]);
-            fprintf(ofp, "%d ", sortedData[index]);
+        for (i = 0; i < myDataSize; i++) {
+            //    printf("%d ", sortedData[i]);
+            fprintf(ofp, "%d ", sortedData[i]);
         }
-        printf("\nClock time (seconds) = %f\n\n", endwtime - startwtime);
+        printf("\nClock time (seconds) = %f\n", endwtime - startwtime);
         printf("\nThe end\n");
         fclose(ofp);
     }
