@@ -1,6 +1,6 @@
 #include "utilities.h"
 
-int multimerge(int *start[], const int lengths[], const int Number, int newArray[], const int newArrayLength) {
+int multimerge(int *starts[], const int lengths[], const int Number, int newArray[], const int newArrayLength) {
     int index, i, j, min;
     int pivots[Number];
     for (i = 0; i < Number; i++) {
@@ -10,8 +10,8 @@ int multimerge(int *start[], const int lengths[], const int Number, int newArray
         min = RAND_MAX;
         index = -1;
         for (j = 0; j < Number; ++j) {
-            if (pivots[j] < lengths[j] && min > start[j][pivots[j]]) {
-                min = start[j][pivots[j]];
+            if (pivots[j] < lengths[j] && min > starts[j][pivots[j]]) {
+                min = starts[j][pivots[j]];
                 index = j;
             }
         }
