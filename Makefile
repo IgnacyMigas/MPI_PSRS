@@ -20,9 +20,6 @@ clean:
 rebuild: | clean
 	make $(EXEC)
 
-val:
-	valgrind --tool=memcheck --leak-check=full ./$(EXEC).out
-
 .PHONY: clean rebuild
 
 run:
