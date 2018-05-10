@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-//#include "mpi.h"
+#include <string.h>
 #include "profiles.h"
 #include "utilities.h"
 
