@@ -1,0 +1,10 @@
+DOWNLOAD AND RUN FROM DOCKER HUB AS ROOT TO INSTALL GIT !!
+docker run -it -u 0 -w /home/xmp omnicompiler/xcalablemp
+
+run as normal user to exec programs
+docker exec -u xmp -it <numer kontenera> bash
+
+numer kontenera mozna wyciagnac:
+docker ps -a 
+
+potem git clone repo i normalnie kompilacja bez cudy i smiga
