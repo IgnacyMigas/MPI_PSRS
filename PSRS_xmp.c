@@ -101,10 +101,12 @@ int main(int argc, char *argv[]) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
     }
 
+
+/*
     #pragma xmp align myData[i] with t[i]
 
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataSize; i++) {
         printf("[%d] %d \n", myid, myData[i]);
-    }
+    }*/
 }
