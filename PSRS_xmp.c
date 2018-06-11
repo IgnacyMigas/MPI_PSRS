@@ -12,12 +12,13 @@
 
 int main(int argc, char *argv[]) {
 
-    int numprocs, myid, server;
+    int numprocs, myid, lastproc, server;
     int i, j, ret;
     double startwtime = 0.0, endwtime;
 
     numprocs = xmp_num_nodes();
     myid = xmpc_node_num();
+    lastproc = numprocs - 1;
     server = 0;
 
     #pragma xmp task on p[server]
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]) {
         myDataLengths = myDataSize / numprocs;
         myDataStarts = i * (myDataSize / numprocs);
     }
-    #pragma xmp task on p[(numprocs - 1)]
+    #pragma xmp task on p[lastproc]
     {
         myDataLengths += (myDataSize % numprocs);
     }
