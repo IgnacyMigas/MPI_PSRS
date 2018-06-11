@@ -85,20 +85,6 @@ int main(int argc, char *argv[]) {
         }
         printf("\nThe end\n");
         startwtime = MPI_Wtime();
-        int dataLength;
-        int dataStarts;
-        for (i = 0; i < numprocs - 1; i++) {
-            dataLengths = myDataSize / numprocs;
-            dataStarts = i * (myDataSize / numprocs);
-            int tmpData[dataLengths];
-            for (j = dataStarts; j < dataLength; j++)
-            {
-                tmpData[j] = myData[j];
-            }
-            #pragma bcast (tmpData) from p[server]
-        }
-        DataLengths = myDataSize / numprocs + (myDataSize % numprocs);
-        DataStarts = i * (myDataSize / numprocs);
     }
     #pragma xmp barrier
 
@@ -120,6 +106,26 @@ int main(int argc, char *argv[]) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
     }
 
+    #pragma xmp barrier
+
+    int myDataPart[myDataLengths];
+
+    #pragma xmp task on p[server]
+    {
+        int dataLength;
+        int dataStart;
+        for (i = 0; i < numprocs - 1; i++) {
+            dataLength = myDataSize / numprocs;
+            dataStart = i * (myDataSize / numprocs);
+            int tmpData[dataLength];
+            for (j = dataStart; j < dataLength; j++) {
+                tmpData[j] = myData[j];
+            }
+            #pragma bcast (tmpData) on p[i]
+        }
+        DataLengths = myDataSize / numprocs + (myDataSize % numprocs);
+        DataStarts = i * (myDataSize / numprocs);
+    }
 
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataSize; i++) {
