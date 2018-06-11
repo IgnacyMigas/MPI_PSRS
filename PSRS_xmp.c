@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
         printf("\nThe end\n");
         startwtime = MPI_Wtime();
     }
+    #pragma xmp align myData[i] with t[i]
 
     int myDataLengths;
     int myDataStarts;
