@@ -20,8 +20,6 @@ int main(int argc, char *argv[]) {
     myid = xmp_node_num();
     server = 0;
 
-    printf("My id is %d\n", myid);
-
     #pragma xmp task on p[server]
     {
         printf("\nStarting\n");
@@ -50,7 +48,35 @@ int main(int argc, char *argv[]) {
         printf("Size of whole data to process: %d\n", myDataSize);
     }
 
+    #pragma xmp template t[myDataSize]
+    #pragma xmp distribute t[cyclic] onto p
+
     #pragma xmp bcast (myDataSize)
 
-    printf("My data dize: %d \n", myDataSize);
+    printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
+
+    #pragma xmp task on p[server]
+    {
+        // set values to sort
+        printf("[%d] Table values to sort:\n", myid);
+        if (ifp != NULL) {
+            for (i = 0; i < myDataSize; i++) {
+                ret = fscanf(ifp, "%d", &myData[i]);
+                if (feof(ifp)) {
+                    printf("ERROR in reading from file!\n");
+                    return -1;
+                }
+                printf("%d ", myData[i]);
+            }
+            fclose(ifp);
+        } else {
+            srand(time(NULL));
+            for (i = 0; i < myDataSize; i++) {
+                myData[i] = rand() % MAX_RANDOM;
+                printf("%d ", myData[i]);
+            }
+        }
+        printf("\nThe end\n");
+        startwtime = MPI_Wtime();
+    }
 }
