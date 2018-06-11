@@ -85,20 +85,26 @@ int main(int argc, char *argv[]) {
         startwtime = MPI_Wtime();
     }
 
-    int myDataLengths[numprocs];
-    int myDataStarts[numprocs];
-
-    for (i = 0; i < numprocs; i++) {
-        myDataLengths[i] = myDataSize / numprocs;
-        myDataStarts[i] = i * (myDataSize / numprocs);
-    }
-    myDataLengths[numprocs - 1] += (myDataSize % numprocs);
+    int myDataLengths;
+    int myDataStarts;
 
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
-        printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths[i], myDataStarts[i]);
+        myDataLengths = myDataSize / numprocs;
+        myDataStarts = i * (myDataSize / numprocs);
+    }
+    #pragma xmp task on p[numprocs - 1]
+    myDataLengths += (myDataSize % numprocs);
+
+    #pragma xmp loop on nodes_t[i]
+    for (i = 0; i < numprocs; i++) {
+        printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
     }
 
-    //#pragma xmp align myData[i] with t[i]
+    #pragma xmp align myData[i] with t[i]
 
+    #pragma xmp loop on t[i]
+    for (i = 0; i < myDataSize; i++) {
+        printf("[%d] %d \n", myid, myData[i]);
+    }
 }
