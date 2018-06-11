@@ -3,7 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "profiles.h"
+//#include "profiles.h"
 #include "utilities.h"
 #include <xmp.h>
 
@@ -27,4 +27,30 @@ int main(int argc, char *argv[]) {
         printf("\nStarting\n");
         printf("Number of processes %d\n", numprocs);
     }
+
+    int myDataSize = 60;
+
+    FILE *ifp, *ofp;
+    char *inFile;
+    ifp = NULL;
+    ofp = NULL;
+
+    #pragma xmp task on p[server]
+    {
+//        ofp = fopen("out.data", "w");
+
+        // set data length
+        for (i = 0; i < argc; i++) {
+            if (strcmp(argv[i], "-f") == 0) {
+                inFile = argv[i + 1];
+                ifp = fopen(inFile, "r");
+                ret = fscanf(ifp, "%d", &myDataSize);
+            }
+        }
+        printf("Size of whole data to process: %d\n", myDataSize);
+    }
+
+    #pragma xmp bcast (myDataSize)
+
+    printf("My data dize: %d \n", myDataSize);
 }
