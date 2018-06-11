@@ -93,8 +93,10 @@ int main(int argc, char *argv[]) {
         myDataLengths = myDataSize / numprocs;
         myDataStarts = i * (myDataSize / numprocs);
     }
-    #pragma xmp task on p[numprocs - 1]
-    myDataLengths += (myDataSize % numprocs);
+    #pragma xmp task on p[(numprocs - 1)]
+    {
+        myDataLengths += (myDataSize % numprocs);
+    }
 
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
