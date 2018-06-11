@@ -108,11 +108,11 @@ int main(int argc, char *argv[]) {
 
     #pragma xmp barrier
 
-    int myDataPart[myDataLengths];
+    int myDataPart[myDataSize];
 
     #pragma xmp task on p[server]
     {
-        int dataLength;
+       /* int dataLength;
         int dataStart;
         for (i = 0; i < numprocs - 1; i++) {
             dataLength = myDataSize / numprocs;
@@ -124,8 +124,15 @@ int main(int argc, char *argv[]) {
             #pragma bcast (tmpData) on p[i]
         }
         dataLength = myDataSize / numprocs + (myDataSize % numprocs);
-        dataStartd = i * (myDataSize / numprocs);
+        dataStart = i * (myDataSize / numprocs);*/
+        #pragma xmp loop on t[i]
+        for (i = 0; i < myDataSize; i++)
+        {
+            myDataPart[i] = myData[i];
+        }
     }
+
+    #pragma xmp barrier
 
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataSize; i++) {
