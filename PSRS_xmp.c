@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     double startwtime = 0.0, endwtime;
 
     numprocs = xmp_num_nodes();
-    myid = xmp_node_num();
+    myid = xmpc_node_num();
     server = 0;
 
     #pragma xmp task on p[server]
@@ -51,9 +51,14 @@ int main(int argc, char *argv[]) {
     #pragma xmp template t[myDataSize]
     #pragma xmp distribute t[cyclic] onto p
 
+    #pragma xmp template nodes_t[numprocs]
+    #pragma xmp distribute nodes_t[cyclic] onto p
+
     #pragma xmp bcast (myDataSize)
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
+
+    int myData[myDataSize];
 
     #pragma xmp task on p[server]
     {
@@ -79,4 +84,21 @@ int main(int argc, char *argv[]) {
         printf("\nThe end\n");
         startwtime = MPI_Wtime();
     }
+
+    int myDataLengths[numprocs];
+    int myDataStarts[numprocs];
+
+    for (i = 0; i < numprocs; i++) {
+        myDataLengths[i] = myDataSize / numprocs;
+        myDataStarts[i] = i * (myDataSize / numprocs);
+    }
+    myDataLengths[numprocs - 1] += (myDataSize % numprocs);
+
+    #pragma xmp loop on nodes_t[i]
+    for (i = 0; i < numprocs; i++) {
+        printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths[i], myDataStarts[i]);
+    }
+
+    //#pragma xmp align myData[i] with t[i]
+
 }
