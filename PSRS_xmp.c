@@ -123,8 +123,8 @@ int main(int argc, char *argv[]) {
             }
             #pragma bcast (tmpData) on p[i]
         }
-        DataLengths = myDataSize / numprocs + (myDataSize % numprocs);
-        DataStarts = i * (myDataSize / numprocs);
+        dataLength = myDataSize / numprocs + (myDataSize % numprocs);
+        dataStartd = i * (myDataSize / numprocs);
     }
 
     #pragma xmp loop on t[i]
