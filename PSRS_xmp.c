@@ -68,19 +68,19 @@ int main(int argc, char *argv[]) {
         printf("[%d] Table values to sort:\n", myid);
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
-                ret = fscanf(ifp, "%d", &myData[i]);
+                ret = fscanf(ifp, "%d", &myData[i]:[server]);
                 if (feof(ifp)) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-                printf("%d ", myData[i]);
+                printf("%d ", myData[i]:[server]);
             }
             fclose(ifp);
         } else {
             srand(time(NULL));
             for (i = 0; i < myDataSize; i++) {
-                myData[i] = rand() % MAX_RANDOM;
-                printf("%d ", myData[i]);
+                myData[i]:[server] = rand() % MAX_RANDOM;
+                printf("%d ", myData[i]:[server]);
             }
         }
         printf("\nThe end\n");
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     #pragma xmp barrier
 
     int myPartData[myDataLengths];
-
+/*
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         for (j = myDataStarts; j < myDataStarts + myDataLengths; j++){
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
         }
     }
     xmpc_sync_all(NULL);
-
+*/
     /*
     #pragma xmp task on p[server]
     {
@@ -140,9 +140,9 @@ int main(int argc, char *argv[]) {
         }
         #pragma bcast (myPartData) on p[lastproc]
     }*/
-
+/*
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataLengths; i++) {
         printf("[%d] %d \n", myid, myPartData[i]);
-    }
+    }*/
 }
