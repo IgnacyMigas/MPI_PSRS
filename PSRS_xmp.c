@@ -9,9 +9,6 @@
 
 #pragma xmp nodes p[*]
 
-#define N 50
-int tmp[N]:[*];
-
 int main(int argc, char *argv[]) {
 
     int numprocs, myid, lastproc, server;
@@ -35,24 +32,6 @@ int main(int argc, char *argv[]) {
     char *inFile;
     ifp = NULL;
     ofp = NULL;
-
-    if (xmpic_this_image() == 0)
-    {
-        for (i = 0; i < N; i++)
-        {
-            tmp[i]:[server] = &i;
-        }
-    }
-    xmpc_sync_all(NULL);
-
-    #pragma xmp task on p[server]
-    {
-        for (i = 0; i < N; i++)
-        {
-            int t = tmp[i]:[server];
-            printf("%d ", t);
-        }
-    }
 
     #pragma xmp task on p[server]
     {
@@ -109,6 +88,7 @@ int main(int argc, char *argv[]) {
     #pragma xmp barrier
 
     int myDataLengths;
+    int maxDataLength;
     int myDataStarts;
 
     #pragma xmp loop on nodes_t[i]
@@ -120,6 +100,9 @@ int main(int argc, char *argv[]) {
     {
         myDataLengths += (myDataSize % numprocs);
     }
+    maxDataLength = myDataLengths + (myDataSize % numprocs);
+
+    printf("[%d] %d", myid, maxDataLength);
 
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
@@ -129,18 +112,7 @@ int main(int argc, char *argv[]) {
     #pragma xmp barrier
 
     int myPartData[myDataLengths];
-/*
-    #pragma xmp loop on nodes_t[i]
-    for (i = 0; i < numprocs; i++) {
-        for (j = myDataStarts; j < myDataStarts + myDataLengths; j++){
-            int tmp = 0;
-            myPartData[tmp] = myData[j]:[server];
-            tmp++;
-        }
-    }
-    xmpc_sync_all(NULL);
-*/
-    /*
+
     #pragma xmp task on p[server]
     {
         int dataLength;
@@ -159,7 +131,7 @@ int main(int argc, char *argv[]) {
             myPartData[j] = myData[dataStart + j];
         }
         #pragma bcast (myPartData) on p[lastproc]
-    }*/
+    }
 /*
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataLengths; i++) {
