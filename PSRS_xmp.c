@@ -16,7 +16,7 @@
 #pragma xmp distribute nodes_t[cyclic] onto p
 
 #define N 50
-int data[N]:[*];
+int myData[N]:[*];
 
 int main(int argc, char *argv[]) {
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
         printf("Number of processes %d\n", numprocs);
     }
 
-    int myDataSize = 60;
+    int myDataSize = N;
 
     FILE *ifp, *ofp;
     char *inFile;
@@ -70,19 +70,19 @@ int main(int argc, char *argv[]) {
         printf("[%d] Table values to sort:\n", myid);
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
-                ret = fscanf(ifp, "%d", &myData[i]:[server]);
+                ret = fscanf(ifp, "%d", &(myData[i]:[server]));
                 if (feof(ifp)) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-                printf("%d ", myData[i]:[server]);
+                printf("%d ", myData[i]);
             }
             fclose(ifp);
         } else {
             srand(time(NULL));
             for (i = 0; i < myDataSize; i++) {
                 myData[i]:[server] = rand() % MAX_RANDOM;
-                printf("%d ", myData[i]:[server]);
+                //printf("%d ", myData[i]);
             }
         }
         printf("\nThe end\n");
@@ -106,11 +106,10 @@ int main(int argc, char *argv[]) {
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
-        printf("[%d] %d\n", myid, maxDataLength);
     }
     #pragma xmp barrier
 
-    int myPartData[maxDataLength];
+    int myPartData[myDataLengths];
 /*
     #pragma xmp task on p[server]
     {
