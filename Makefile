@@ -1,7 +1,7 @@
 CXX = xmpcc
-CXXFLAGS = -std=c11 -lmpe -lm -lpthread
-EXEC = PSRS
-SRC = utilities.c profiles.c
+CXXFLAGS =
+EXEC = PSRS_xmp
+SRC = utilities.c
 OBJ = $(SRC:.c=.o)
 LIB =
 N = 4

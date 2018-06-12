@@ -136,9 +136,7 @@ int main(int argc, char *argv[]) {
         #pragma bcast (myPartData) on p[lastproc]
     }
 
-    #pragma xmp loop on t[i]
-    for (i = 0; i < myDataLengths; i++) {
-        printf("[%d] %d \n", myid, myPartData[i]);
-    }
+    #pragma xmp barrier
+
     printArrayAtOnce(myid, "msg", myPartData, myDataLengths);
 }
