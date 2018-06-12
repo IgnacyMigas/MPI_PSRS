@@ -1,9 +1,9 @@
-CXX = /opt/nfs/mpich-3.2/bin/mpicc
+CXX = xmpcc
 CXXFLAGS = -std=c11 -lmpe -lm -lpthread
 EXEC = PSRS
 SRC = utilities.c profiles.c
 OBJ = $(SRC:.c=.o)
-LIB = -I/opt/nfs/mpe2-2.4.9b/include -L/opt/nfs/mpe2-2.4.9b/lib
+LIB =
 N = 4
 
 all: $(EXEC)
