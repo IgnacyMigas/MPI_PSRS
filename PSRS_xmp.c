@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     #pragma xmp barrier
 
-    int myPartData[myDataLengths];
+    int myPartData[maxDataLength];
 
     #pragma xmp task on p[server]
     {
@@ -128,16 +128,17 @@ int main(int argc, char *argv[]) {
             }
             #pragma bcast (myPartData) on p[i]
         }
-        dataLength = myDataSize / numprocs;// + (myDataSize % numprocs);
+        dataLength = myDataSize / numprocs + (myDataSize % numprocs);
         dataStart = i * (myDataSize / numprocs);
         for (j = 0; j < dataLength; j++) {
             myPartData[j] = myData[dataStart + j];
         }
         #pragma bcast (myPartData) on p[lastproc]
     }
-/*
+
     #pragma xmp loop on t[i]
     for (i = 0; i < myDataLengths; i++) {
         printf("[%d] %d \n", myid, myPartData[i]);
-    }*/
+    }
+    printArrayAtOnce(myid, "msg", myPartData, myDataLengths);
 }
