@@ -40,8 +40,17 @@ int main(int argc, char *argv[]) {
     {
         for (i = 0; i < N; i++)
         {
-            tmp[i]:[server] = i;
-            printf("%d ", tmp[i]:[server]);
+            tmp[i]:[server] = &i;
+        }
+    }
+    xmpc_sync_all(NULL);
+
+    #pragma xmp task on p[server]
+    {
+        for (i = 0; i < N; i++)
+        {
+            int t = tmp[i]:[server];
+            printf("%d ", t);
         }
     }
 
