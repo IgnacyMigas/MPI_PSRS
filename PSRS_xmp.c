@@ -100,9 +100,10 @@ int main(int argc, char *argv[]) {
     {
         myDataLengths += (myDataSize % numprocs);
     }
-    maxDataLength = myDataLengths + (myDataSize % numprocs);
-
-    printf("[%d] %d", myid, maxDataLength);
+    #pragma xmp task on p[server: (numprocs - 1)]
+    {
+        maxDataLength = myDataLengths + (myDataSize % numprocs);
+    }
 
     #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
