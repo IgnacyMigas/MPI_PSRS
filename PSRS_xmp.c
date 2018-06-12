@@ -10,7 +10,7 @@
 #pragma xmp nodes p[*]
 
 #define N 50
-int myData[N]:[*];
+int tmp[N]:[*];
 
 int main(int argc, char *argv[]) {
 
@@ -35,6 +35,15 @@ int main(int argc, char *argv[]) {
     char *inFile;
     ifp = NULL;
     ofp = NULL;
+
+    if (xmpic_this_image() == 0)
+    {
+        for (i = 0; i < N; i++)
+        {
+            tmp[i]:[server] = i;
+            printf("%d ", tmp[i]:[server]);
+        }
+    }
 
     #pragma xmp task on p[server]
     {
@@ -61,6 +70,7 @@ int main(int argc, char *argv[]) {
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
 
+    int myData[myDataSize];
     // #pragma xmp align myData[i] with t[i]
 
     #pragma xmp task on p[server]
@@ -69,19 +79,19 @@ int main(int argc, char *argv[]) {
         printf("[%d] Table values to sort:\n", myid);
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
-                ret = fscanf(ifp, "%d", &(myData[i]:[server]));
+                ret = fscanf(ifp, "%d", &myData[i]);
                 if (feof(ifp)) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-                printf("%d ", myData[i]:[server]);
+                printf("%d ", myData[i]);
             }
             fclose(ifp);
         } else {
             srand(time(NULL));
             for (i = 0; i < myDataSize; i++) {
-                myData[i]:[server] = rand() % MAX_RANDOM;
-                printf("%d ", myData[i]:[server]);
+                myData[i] = rand() % MAX_RANDOM;
+                printf("%d ", myData[i]);
             }
         }
         printf("\nThe end\n");
