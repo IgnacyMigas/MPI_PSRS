@@ -9,6 +9,7 @@
 
 #pragma xmp nodes p[*]
 
+
 int main(int argc, char *argv[]) {
 
     int numprocs, myid, lastproc, server;
@@ -126,7 +127,8 @@ int main(int argc, char *argv[]) {
                 myPartData[j] = myData[dataStart + j];
             }
             printArrayAtOnce(myid, "from server", myPartData, myDataLengths);
-            #pragma bcast (myPartData) on p[i]
+            #pragma bcast (myPartData) from p[server] on p[i]
+            #pragma xmp barrier
         }
         /*dataLength = myDataSize / numprocs + (myDataSize % numprocs);
         dataStart = i * (myDataSize / numprocs);
@@ -139,4 +141,6 @@ int main(int argc, char *argv[]) {
     #pragma xmp barrier
 
     printArrayAtOnce(myid, "msg", myPartData, myDataLengths);
+
+    int qqq[myDataSize]:[*];
 }
