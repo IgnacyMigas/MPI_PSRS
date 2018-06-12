@@ -59,8 +59,8 @@ int main(int argc, char *argv[]) {
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
 
-    int myData[myDataSize];
-    #pragma xmp align myData[i] with t[i]
+    int myData[myDataSize]:[*];
+    // #pragma xmp align myData[i] with t[i]
 
     #pragma xmp task on p[server]
     {
@@ -108,34 +108,41 @@ int main(int argc, char *argv[]) {
 
     #pragma xmp barrier
 
-    int myDataPart[myDataSize];
+    int myPartData[myDataLengths];
 
+    #pragma xmp loop on nodes_t[i]
+    for (i = 0; i < numprocs; i++) {
+        for (j = myDataStarts; j < myDataStarts + myDataLengths; j++){
+            int tmp = 0;
+            myPartData[tmp] = myData[j]:[server];
+            tmp++;
+        }
+    }
+    xmpc_sync_all(NULL);
+
+    /*
     #pragma xmp task on p[server]
     {
-       /* int dataLength;
+        int dataLength;
         int dataStart;
         for (i = 0; i < numprocs - 1; i++) {
             dataLength = myDataSize / numprocs;
             dataStart = i * (myDataSize / numprocs);
-            int tmpData[dataLength];
-            for (j = dataStart; j < dataLength; j++) {
-                tmpData[j] = myData[j];
+            for (j = 0; j < dataLength; j++) {
+                myPartData[j] = myData[dataStart + j];
             }
-            #pragma bcast (tmpData) on p[i]
+            #pragma bcast (myPartData) on p[i]
         }
-        dataLength = myDataSize / numprocs + (myDataSize % numprocs);
-        dataStart = i * (myDataSize / numprocs);*/
-        #pragma xmp loop on t[i]
-        for (i = 0; i < myDataSize; i++)
-        {
-            myDataPart[i] = myData[i];
+        dataLength = myDataSize / numprocs;// + (myDataSize % numprocs);
+        dataStart = i * (myDataSize / numprocs);
+        for (j = 0; j < dataLength; j++) {
+            myPartData[j] = myData[dataStart + j];
         }
-    }
-
-    #pragma xmp barrier
+        #pragma bcast (myPartData) on p[lastproc]
+    }*/
 
     #pragma xmp loop on t[i]
-    for (i = 0; i < myDataSize; i++) {
-        printf("[%d] %d \n", myid, myData[i]);
+    for (i = 0; i < myDataLengths; i++) {
+        printf("[%d] %d \n", myid, myPartData[i]);
     }
 }
