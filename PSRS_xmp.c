@@ -9,6 +9,14 @@
 
 #pragma xmp nodes p[*]
 
+#pragma xmp template t[myDataSize]
+#pragma xmp distribute t[block] onto p
+
+#pragma xmp template nodes_t[numprocs]
+#pragma xmp distribute nodes_t[cyclic] onto p
+
+#define N 50
+int data[N]:[*];
 
 int main(int argc, char *argv[]) {
 
@@ -49,17 +57,11 @@ int main(int argc, char *argv[]) {
         printf("Size of whole data to process: %d\n", myDataSize);
     }
 
-    #pragma xmp template t[myDataSize]
-    #pragma xmp distribute t[block] onto p
-
-    #pragma xmp template nodes_t[numprocs]
-    #pragma xmp distribute nodes_t[cyclic] onto p
-
     #pragma xmp bcast (myDataSize)
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
 
-    int myData[myDataSize];
+    // int myData[myDataSize];
     // #pragma xmp align myData[i] with t[i]
 
     #pragma xmp task on p[server]
@@ -89,7 +91,6 @@ int main(int argc, char *argv[]) {
     #pragma xmp barrier
 
     int myDataLengths;
-    int maxDataLength;
     int myDataStarts;
 
     #pragma xmp loop on nodes_t[i]
@@ -100,11 +101,6 @@ int main(int argc, char *argv[]) {
     #pragma xmp task on p[lastproc]
     {
         myDataLengths += (myDataSize % numprocs);
-        maxDataLength = myDataLengths;
-    }
-    #pragma xmp task on p[server: (numprocs - 1)]
-    {
-        maxDataLength = myDataLengths + (myDataSize % numprocs);
     }
 
     #pragma xmp loop on nodes_t[i]
@@ -112,11 +108,10 @@ int main(int argc, char *argv[]) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
         printf("[%d] %d\n", myid, maxDataLength);
     }
-
     #pragma xmp barrier
 
     int myPartData[maxDataLength];
-
+/*
     #pragma xmp task on p[server]
     {
         int dataLength = myDataSize / numprocs;
@@ -135,12 +130,11 @@ int main(int argc, char *argv[]) {
         for (j = 0; j < dataLength; j++) {
             myPartData[j] = myData[dataStart + j];
         }
-        #pragma bcast (myPartData) on p[lastproc]*/
+        #pragma bcast (myPartData) on p[lastproc]
     }
 
     #pragma xmp barrier
-
+*/
     printArrayAtOnce(myid, "msg", myPartData, myDataLengths);
 
-    int qqq[myDataSize]:[*];
 }
