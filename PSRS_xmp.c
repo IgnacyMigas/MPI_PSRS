@@ -10,7 +10,7 @@
 #pragma xmp nodes p[*]
 
 #define N 50
-int tmp[N]:[*];
+int myData[N]:[*];
 
 int main(int argc, char *argv[]) {
 
@@ -61,7 +61,6 @@ int main(int argc, char *argv[]) {
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
 
-    int myData[myDataSize];
     // #pragma xmp align myData[i] with t[i]
 
     #pragma xmp task on p[server]
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]) {
         printf("[%d] Table values to sort:\n", myid);
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
-                ret = fscanf(ifp, "%d", &myData[i]:[server]);
+                ret = fscanf(ifp, "%d", &(myData[i]:[server]));
                 if (feof(ifp)) {
                     printf("ERROR in reading from file!\n");
                     return -1;
