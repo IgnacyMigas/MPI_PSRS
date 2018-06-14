@@ -15,11 +15,11 @@ int main(int argc, char *argv[]) {
     {
         printf("Number of nodes %d\n", xmp_num_nodes());
 
-        if (argc < 2) {
-            printf("Usage: %s <num_of_trials>\n", argv[0]);
-            printf("Default number of trials has been used (%d)\n\n", n);
+        if (argc <= 1) {
+            printf("Default number of n = %d\n\n", n);
         } else {
             n = (int) atoi(argv[1]);
+            printf("Passed number of n = %d\n\n", n);
         }
     }
 #pragma bcast (n) from p[server]
