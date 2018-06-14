@@ -10,6 +10,7 @@ int server = 0;
 
 int main(int argc, char *argv[]) {
     double pi = 0.0;
+    double PI25DT = 3.141592653589793238462643;
     int n = 1000000;
     double h, x, sum;
 
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
 #pragma xmp barrier
 
 #pragma xmp loop on t[i]
-    for (int i = 0; i < trials; i++) {
+    for (int i = 0; i < n; i++) {
         x = h * ((double) i - 0.5);
         sum += (4.0 / (1.0 + x * x));
     }
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
 
 #pragma xmp task on p[server]
     {
-        printf("\nPI is approx. %5.20lf\n", pi);
+        printf("pi is approximately %.16f, Error is %.16f\n", pi, fabs(pi - PI25DT));
     }
 
     return 0;
