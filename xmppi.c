@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <xmp.h>
 
 #define f(x) (1.0/(1.0 + x*x))
