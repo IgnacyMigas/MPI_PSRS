@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+#pragma xmp barrier
+
     for (int i = 0; i < trials; i++) {
         x = h * ((double) i - 0.5);
         sum += (4.0 / (1.0 + x * x));
@@ -37,6 +39,7 @@ int main(int argc, char *argv[]) {
 
     printf("[%d] local PI is %5.20lf\n", xmpc_node_num(), pi);
 
+#pragma xmp barrier
 #pragma xmp reduction(+:pi)
 
 #pragma xmp task on p[server]
