@@ -8,9 +8,12 @@
 int server = 0;
 
 int main(int argc, char *argv[]) {
-    double local_pi = 0.0;
+    double pi = 0.0;
+    int trials = 1000000;
 
-    int trials = 1000000
+    int n, h, x, sum;
+    n = xmp_num_nodes();
+    h = 1 / (double) n;
 
 #pragma xmp task on p[server]
     {
@@ -23,17 +26,19 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < trials; i++) {
-        local_pi += (double) f((0.5 + i) / (trials));
+        x = h * ((double) i - 0.5);
+        sum += (4.0 / (1.0 + x * x));
     }
-    local_pi *= (double) (4.0 / trials);
+    pi = h * sum;
 
-#pragma xmp reduction(+:local_pi)
+    printf("[%d] local PI is %5.20lf\n", xmpc_node_num(), pi);
 
-#pragma xmp barrier
+#pragma xmp reduction(+:pi)
 
 #pragma xmp task on p[server]
     {
         printf("PI is approx. %5.20lf\n", pi);
-        upc_lock_free(l);
     }
+
+    return 0;
 }
