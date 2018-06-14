@@ -13,13 +13,15 @@ int main(int argc, char *argv[]) {
 
     int n, h, x, sum;
     n = xmp_num_nodes();
-    h = 1 / (double) n;
+    h = 1.0 / (double) n;
 
 #pragma xmp task on p[server]
     {
+        printf("Number of nodes %d\n", n);
+
         if (argc < 2) {
             printf("Usage: %s <num_of_trials>\n", argv[0]);
-            printf("Default number of trials has been used (%d)\n", trials);
+            printf("Default number of trials has been used (%d)\n\n", trials);
         } else {
             trials = (int) atoi(argv[1]);
         }
