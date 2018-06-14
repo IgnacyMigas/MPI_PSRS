@@ -16,7 +16,8 @@
 #pragma xmp distribute nodes_t[cyclic] onto p
 
 #define N 50
-int myData[N]:[*];
+int myData[N]
+:[*];
 
 int main(int argc, char *argv[]) {
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]) {
     lastproc = numprocs - 1;
     server = 0;
 
-    #pragma xmp task on p[server]
+#pragma xmp task on p[server]
     {
         printf("\nStarting\n");
         printf("Number of processes %d\n", numprocs);
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     ifp = NULL;
     ofp = NULL;
 
-    #pragma xmp task on p[server]
+#pragma xmp task on p[server]
     {
 //        ofp = fopen("out.data", "w");
 
@@ -57,59 +58,64 @@ int main(int argc, char *argv[]) {
         printf("Size of whole data to process: %d\n", myDataSize);
     }
 
-    #pragma xmp bcast (myDataSize)
+#pragma xmp bcast (myDataSize)
 
     printf("[%d] Whole data to process size: %d \n", myid, myDataSize);
 
     // int myData[myDataSize];
     // #pragma xmp align myData[i] with t[i]
 
-    #pragma xmp task on p[server]
+#pragma xmp task on p[server]
     {
         // set values to sort
         printf("[%d] Table values to sort:\n", myid);
         if (ifp != NULL) {
             for (i = 0; i < myDataSize; i++) {
-                ret = fscanf(ifp, "%d", &(myData[i]:[server]));
+                ret = fscanf(ifp, "%d", &myData[i]);
                 if (feof(ifp)) {
                     printf("ERROR in reading from file!\n");
                     return -1;
                 }
-                printf("%d ", myData[i]);
+                //printf("%d ", myData[i]);
             }
             fclose(ifp);
         } else {
             srand(time(NULL));
             for (i = 0; i < myDataSize; i++) {
-                myData[i]:[server] = rand() % MAX_RANDOM;
+                myData[i] = rand() % MAX_RANDOM;
                 //printf("%d ", myData[i]);
             }
         }
         printf("\nThe end\n");
         startwtime = MPI_Wtime();
     }
-    #pragma xmp barrier
+#pragma xmp barrier
 
     int myDataLengths;
     int myDataStarts;
 
-    #pragma xmp loop on nodes_t[i]
+#pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         myDataLengths = myDataSize / numprocs;
         myDataStarts = i * (myDataSize / numprocs);
     }
-    #pragma xmp task on p[lastproc]
+#pragma xmp task on p[lastproc]
     {
         myDataLengths += (myDataSize % numprocs);
     }
 
-    #pragma xmp loop on nodes_t[i]
+#pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
     }
-    #pragma xmp barrier
+#pragma xmp barrier
 
-    int myPartData[myDataLengths];
+    /*
+#pragma xmp loop on nodes_t[i]
+    for (i = 0; i < numprocs; i++) {
+        myData[myDataStarts]
+    }*/
+#pragma xmp barrier
 /*
     #pragma xmp task on p[server]
     {
