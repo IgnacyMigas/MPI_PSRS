@@ -2,18 +2,14 @@
 #include <math.h>
 #include <xmp.h>
 
-#define f(x) (1.0/(1.0 + x*x))
-
 #pragma xmp nodes p[*]
-
-
-int server = 0;
 
 int main(int argc, char *argv[]) {
     double pi = 0.0;
     double PI25DT = 3.141592653589793238462643;
-    int n = 1000000;
+    long n = 1000000;
     double h, x, sum;
+    int server = 0;
 
 #pragma xmp task on p[server]
     {
@@ -27,11 +23,13 @@ int main(int argc, char *argv[]) {
         }
     }
 #pragma bcast (n) from p[server]
+#pragma xmp barrier
+
     h = 1.0 / (double) n;
+
 #pragma xmp template t[n]
 #pragma xmp distribute t[cyclic] onto p
 
-#pragma xmp barrier
 
 #pragma xmp loop on t[i]
     for (int i = 0; i < n; i++) {
@@ -40,13 +38,13 @@ int main(int argc, char *argv[]) {
     }
     pi = h * sum;
 
-    printf("[%d] Local PI is %5.20lf\n", xmpc_node_num(), pi);
+    printf("[%d] Local PI is %.16ff\n", xmpc_node_num(), pi);
 
 #pragma xmp reduction(+:pi)
 
 #pragma xmp task on p[server]
     {
-        printf("pi is approximately %.16f, Error is %.16f\n", pi, fabs(pi - PI25DT));
+        printf("PI is approximately %.16f, Error is %.16f\n", pi, fabs(pi - PI25DT));
     }
 
     return 0;
