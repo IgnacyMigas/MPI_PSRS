@@ -11,9 +11,11 @@ int main(int argc, char *argv[]) {
     double pi = 0.0;
     int trials = 1000000;
 
-    int n, h, x, sum;
+    int n;
+    double h, x, sum;
     n = xmp_num_nodes();
-    h = 1.0 / (double) n;
+    h = 1.0 / (double)n;
+
 
 #pragma xmp task on p[server]
     {
@@ -39,7 +41,7 @@ int main(int argc, char *argv[]) {
 
 #pragma xmp task on p[server]
     {
-        printf("PI is approx. %5.20lf\n", pi);
+        printf("\nPI is approx. %5.20lf\n", pi);
     }
 
     return 0;
