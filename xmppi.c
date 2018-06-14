@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     }
     pi = h * sum;
 
-    printf("[%d] Local PI is %.16ff\n", xmpc_node_num(), pi);
+    printf("[%d] Local PI is %.16f\n", xmpc_node_num(), pi);
 
 #pragma xmp reduction(+:pi)
 
