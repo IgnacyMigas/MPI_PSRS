@@ -42,3 +42,12 @@ void printArrayAtOnce(int myid, char *msg, int array[], int length) {
     }
     printf("[process-%d] %s %s\n", myid, msg, tmp_data);
 }
+
+void printArrayAtOnceStart(int myid, char *msg, int array[], int start, int length) {
+    char tmp_data[length * 8];
+    int tmp_index = 0;
+    for (int i = start; i < start + length; i++) {
+        tmp_index += sprintf(&tmp_data[tmp_index], "%d ", array[i]);
+    }
+    printf("[process-%d] %s %s\n", myid, msg, tmp_data);
+}

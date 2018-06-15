@@ -12,4 +12,6 @@ int compare_ints(const void *a, const void *b);
 
 void printArrayAtOnce(int myid, char *msg, int array[], int length);
 
+void printArrayAtOnceStart(int myid, char *msg, int array[], int start, int length);
+
 #endif
