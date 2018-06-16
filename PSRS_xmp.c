@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <math.h>
 #include <time.h>
 #include <string.h>
-//#include "profiles.h"
 #include "utilities.h"
 #include <xmp.h>
 
@@ -27,7 +25,6 @@ int dataLength;
 int newBuffer[N]:[*];
 int newLengths[MAX_PROCS]:[*];
 
-// TODO: KOMENTARZE do dodania + maly refactoring
 int main(int argc, char *argv[]) {
 
     int numprocs, myid, lastproc, server;
@@ -52,6 +49,10 @@ int main(int argc, char *argv[]) {
     ifp = NULL;
     ofp = NULL;
 
+/**
+  * PHASE I
+  * Data preparation
+  */
 #pragma xmp task on p[server]
     {
         ofp = fopen("out.data", "w");
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
         printf("Size of whole data to process: %d\n", myDataSize);
     }
 
+    // send data length to all nodes
 #pragma xmp bcast (myDataSize)
 #pragma xmp barrier
 
@@ -106,6 +108,7 @@ int main(int argc, char *argv[]) {
     int myDataLengths;
     int myDataStarts;
 
+    // set data lengths and data start values of each process
 #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         myDataLengths = myDataSize / numprocs;
@@ -121,7 +124,12 @@ int main(int argc, char *argv[]) {
         printf("[process-%d] myDataLength=%d, myDataStarts=%d\n", i, myDataLengths, myDataStarts);
     }
 //#pragma xmp barrier
-    
+
+
+/**
+  * PHASE II
+  * Data gathering, pivot choosing
+  */
 #pragma xmp loop on nodes_t[i]
     for (i = 0; i < numprocs; i++) {
         myData[0:myDataLengths]= myData[myDataStarts:myDataLengths]:[server];
@@ -131,29 +139,34 @@ int main(int argc, char *argv[]) {
 
     // processes quick sort each process own data
     qsort(myData, myDataLengths, sizeof(int), compare_ints);
-	printArrayAtOnce(myid, "myData", myData, myDataLengths);
+    printArrayAtOnce(myid, "myData", myData, myDataLengths);
 
 // #pragma xmp barrier
 
+    // process get pivots from data
     for (i = 0; i < numprocs; i++) {
         pivots[i] = myData[i * myDataLengths / numprocs];
     }
     printArrayAtOnce(myid, "pivots", pivots, numprocs);
 
 #pragma xmp barrier
-    
-   if(xmpc_this_image() == 0) {
-	for (i = 0; i < numprocs; i++) {
-		pivots[i*numprocs:numprocs] = pivots[0:numprocs]:[i];
-	}
-    printArrayAtOnce(myid, "server pivots", pivots, numprocs * numprocs);  
-   }
-   xmp_sync_all(NULL);
+
+    if (xmpc_this_image() == 0) {
+        for (i = 0; i < numprocs; i++) {
+            pivots[i * numprocs:numprocs] = pivots[0:numprocs]:[i];
+        }
+        printArrayAtOnce(myid, "server pivots", pivots, numprocs * numprocs);
+    }
+    xmp_sync_all(NULL);
 
 
+/**
+  * PHASE III
+  * Server pivot get, merge, choose and send to process
+  */
 #pragma xmp task on p[server]
     {
-	int *starts[numprocs];
+        int *starts[numprocs];
         int lengths[numprocs];
 
         for (i = 0; i < numprocs; i++) {
@@ -168,11 +181,11 @@ int main(int argc, char *argv[]) {
             pivots[i] = tmpBuffer[(i + 1) * numprocs];
         }
 
-	printArrayAtOnce(myid, "Merged pivots", tmpBuffer, numprocs * numprocs);
-	printArrayAtOnce(myid, "Chosen pivots", pivots, numprocs - 1);
+        printArrayAtOnce(myid, "Merged pivots", tmpBuffer, numprocs * numprocs);
+        printArrayAtOnce(myid, "Chosen pivots", pivots, numprocs - 1);
 
         for (i = 0; i < numprocs; i++) {
-            pivots[0:numprocs-1]:[i] = pivots[0:numprocs-1];
+            pivots[0:numprocs - 1]:[i] = pivots[0:numprocs - 1];
         }
     }
 
@@ -194,39 +207,46 @@ int main(int argc, char *argv[]) {
         printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, i, partitionsStart[i],
                partitionsLength[i]);
     }
-// set Start and Length for last class
+    // set Start and Length for last class
     partitionsStart[numprocs - 1] = dataindex;
     partitionsLength[numprocs - 1] = myDataLengths - dataindex;
 
-    printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, numprocs - 1, partitionsStart[numprocs - 1],
+    printf("[process-%d][class-%d] class start=%d, class length=%d\n", myid, numprocs - 1,
+           partitionsStart[numprocs - 1],
            partitionsLength[numprocs - 1]);
 
 #pragma xmp barrier
 
+/**
+  * PHASE V
+  * Partitioned data gather, multi-merge
+  */
     int newStarts[numprocs];
 
     // this process gets all sent partitioned data to corresponding process
     for (i = 0; i < numprocs; i++) {
         // each process gathers up data length of corresponding class from the other nodes
         //MPI_Gather(&partitionsLength[i], 1, MPI_INT, newLengths, 1, MPI_INT, i, world);
-		newLengths[i] = partitionsLength[myid]:[i];
-    }	
+        newLengths[i] = partitionsLength[myid]:[i];
+    }
     // on local process, calculate start positions of received data
     newStarts[0] = 0;
     for (j = 1; j < numprocs; j++) {
-		newStarts[j] = newStarts[j - 1] + newLengths[j - 1];
+        newStarts[j] = newStarts[j - 1] + newLengths[j - 1];
     }
 
 //#pragma xmp barrier
 
     // each process gathers up all the members of corresponding class from the other nodes
-	for (i = 0; i < numprocs; i++) {		
-		tmpstart=partitionsStart[myid]:[i];
-		tmplength=partitionsLength[myid]:[i];
-		int tmpnewstart = newStarts[i];
-		int tmpnewlength = newLengths[i];
-		printf("[%d] tmp: %d %d | new: %d %d \n", myid, tmpstart, tmplength, tmpnewstart, tmpnewlength);
-		newBuffer[tmpnewstart:tmpnewlength] = myData[tmpstart:tmplength]:[i];     
+    for (i = 0; i < numprocs; i++) {
+        tmpstart = partitionsStart[myid]:[i];
+        tmplength = partitionsLength[myid]:[i];
+        int tmpnewstart = newStarts[i];
+        int tmpnewlength = newLengths[i];
+        printf("[%d] tmp: %d %d | new: %d %d \n", myid, tmpstart, tmplength, tmpnewstart, tmpnewlength);
+        newBuffer[tmpnewstart:
+        tmpnewlength] = myData[tmpstart:
+        tmplength]:[i];
     }
 
 #pragma xmp barrier
@@ -235,33 +255,39 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < numprocs; i++) {
         newData[i] = newBuffer + newStarts[i];
     }
+    // multimerge this single partition data
     multimerge(newData, newLengths, numprocs, myData, myDataSize);
 
-	newDataLength = newStarts[numprocs - 1] + newLengths[numprocs - 1];
-	printArrayAtOnce(myid, "Data for myid partition", myData, newDataLength);
+    newDataLength = newStarts[numprocs - 1] + newLengths[numprocs - 1];
+    printArrayAtOnce(myid, "Data for myid partition", myData, newDataLength);
 
 #pragma xmp barrier
 
-#pragma xmp task on p[server] 
-	{
-		int sendStart = 0;
-		for (i = 0; i < numprocs; i++) {
-			dataLength = newDataLength:[i];
-			sortedData[sendStart:dataLength] = myData[0:dataLength]:[i];
-			sendStart += dataLength;
-		}
-		endwtime = MPI_Wtime();
+/**
+  * PHASE VI
+  * Server collects data starts, lengths and data from all processes and merge them
+  * It also saves result to file and output time spent
+  */
+#pragma xmp task on p[server]
+    {
+        int sendStart = 0;
+        for (i = 0; i < numprocs; i++) {
+            dataLength = newDataLength:[i];
+            sortedData[sendStart:dataLength] = myData[0:dataLength]:[i];
+            sendStart += dataLength;
+        }
+        endwtime = MPI_Wtime();
 
-		printArrayAtOnce(myid, "sorted data", sortedData, myDataSize);
+        printArrayAtOnce(myid, "sorted data", sortedData, myDataSize);
 
-		fprintf(ofp, "%d\n", myDataSize);
-	 	for (i = 0; i < myDataSize; i++) 
-			fprintf(ofp, "%d ", sortedData[i]);
+        fprintf(ofp, "%d\n", myDataSize);
+        for (i = 0; i < myDataSize; i++)
+            fprintf(ofp, "%d ", sortedData[i]);
 
-		printf("\nClock time (seconds) = %f\n", endwtime - startwtime);
-		printf("\nThe end\n");
-		fclose(ofp);
-	}
+        printf("\nClock time (seconds) = %f\n", endwtime - startwtime);
+        printf("\nThe end\n");
+        fclose(ofp);
+    }
 
-	return 0;
+    return 0;
 }
