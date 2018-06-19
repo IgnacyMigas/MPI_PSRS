@@ -1,6 +1,6 @@
 CXX = xmpcc
 CXXFLAGS = 
-EXEC = PSRS_xmp
+EXEC = PSRS
 SRC = utilities.c
 OBJ = $(SRC:.c=.o)
 LIB = -I/opt/nfs/cuda/include -L/opt/nfs/cuda/lib64
