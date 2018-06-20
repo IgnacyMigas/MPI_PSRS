@@ -191,6 +191,10 @@ int main(int argc, char *argv[]) {
 
 #pragma xmp barrier
 
+/**
+  * PHASE IV
+  * Data partitioning
+  */
     printArrayAtOnce(myid, "Chosen pivots on node", pivots, numprocs - 1);
 
     // iterate over local data to partition data to classes
@@ -226,7 +230,6 @@ int main(int argc, char *argv[]) {
     // this process gets all sent partitioned data to corresponding process
     for (i = 0; i < numprocs; i++) {
         // each process gathers up data length of corresponding class from the other nodes
-        //MPI_Gather(&partitionsLength[i], 1, MPI_INT, newLengths, 1, MPI_INT, i, world);
         newLengths[i] = partitionsLength[myid]:[i];
     }
     // on local process, calculate start positions of received data
